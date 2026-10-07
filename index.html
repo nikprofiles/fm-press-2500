@@ -87,16 +87,25 @@ tr.hdr td{background:#f4f7fa;font-weight:700;color:var(--mut);font-size:13px;tex
  #mstrip{display:flex;position:fixed;left:0;right:0;bottom:calc(66px + env(safe-area-inset-bottom));z-index:11;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:6px 8px;gap:6px;align-items:center}
  #mstrip #stageTitle{font-size:14px}
  #mstrip #play{white-space:nowrap}
- #hud{top:auto;bottom:calc(66px + env(safe-area-inset-bottom));max-height:56vh;transform:translateY(110%);transition:transform .25s,max-height .25s;padding:6px 12px 10px;border-radius:18px 18px 0 0;overflow:auto;box-shadow:0 -8px 30px rgba(20,40,70,.2)}
- #hud.open{transform:none}#hud.full{max-height:calc(100vh - 140px)}
+ #hud{top:auto;bottom:calc(66px + env(safe-area-inset-bottom));max-height:40vh;transform:translateY(110%);transition:transform .25s,max-height .25s;padding:6px 12px 10px;border-radius:18px 18px 0 0;overflow:auto;box-shadow:0 -8px 30px rgba(20,40,70,.2)}
+ #hud.open{transform:none}#hud.full{max-height:calc(100vh - 150px)}
+ #hud h3,#hud .sub{font-size:13px}#desc{font-size:13px;max-height:4.5em}#stats{font-size:12px;gap:10px}
+ #hud button.sm{padding:6px 9px;font-size:13px}#secBtns button{padding:6px 8px}
+ #hud table{font-size:12.5px}#hud td,#hud th{padding:5px 5px}#hud th{font-size:11px}
  #hud.min{transform:translateY(110%)}
  #hud>.row:first-of-type,#hud #steps,#hud #tabs{display:none}
  #grab{margin:4px auto 8px}
  .pane{max-height:none}
- #legend{top:auto;bottom:calc(126px + env(safe-area-inset-bottom));right:8px;gap:6px}#legend button{width:42px;height:42px;font-size:18px;border-radius:12px}
+ #legend{top:max(44px,calc(env(safe-area-inset-top) + 36px));bottom:auto;right:6px;gap:4px}#legend button{width:34px;height:34px;font-size:15px;border-radius:9px;opacity:.85}
  #speed{display:none}
- #callout{top:auto;left:8px;right:58px;bottom:calc(126px + env(safe-area-inset-bottom));max-height:46vh;overflow:auto;padding:10px 12px}
- #callout .h{font-size:17px}#callout .g{font-size:13.5px;gap:2px 10px;margin-top:6px}#callout .ref{font-size:13.5px;padding:8px 10px;margin-top:8px}
+ #callout{top:auto;left:6px;right:6px;bottom:calc(126px + env(safe-area-inset-bottom));max-height:34vh;overflow:auto;padding:8px 40px 8px 10px;border-width:1.5px}
+ #callout .h{font-size:14px;gap:8px;padding-right:44px}#callout .h .sw{width:12px;height:12px}#callout .g{font-size:12.5px;gap:1px 8px;margin-top:6px}#callout .ref{font-size:12.5px;padding:6px 8px;margin-top:6px}
+ #callout .x{width:30px;height:30px;font-size:15px;right:6px;top:6px}
+ #callout.mini .g,#callout.mini .ref{display:none}#callout .more{display:none}#callout.mini .more{display:block;font-size:12px;color:var(--acc);margin-top:4px}
+ #mstrip #stageTitle{font-size:13px}#mstrip button.sm{padding:6px 9px;font-size:13px}#steps button{min-width:34px;padding:6px 8px;font-size:13px}
+ #tree .n{padding:6px 5px;font-size:13px}#tree .n.leaf{font-size:12.5px;padding-left:24px}#tree .n.g{font-size:11px}#search{font-size:13px;padding:6px 9px}
+ #mtabs button{min-height:46px;font-size:11px}#mtabs button i{font-size:17px}
+ #toast{font-size:13px;padding:7px 12px}#banner h2{font-size:17px}#banner p{font-size:13px}
  #banner{padding-top:max(60px,calc(env(safe-area-inset-top) + 50px))}
  #toast{top:auto;bottom:calc(136px + env(safe-area-inset-bottom))}
  #tree .n{padding:8px 6px;font-size:15px}#tree .n.leaf{font-size:14px}
@@ -218,6 +227,9 @@ function tube(m,pts,r,col){// полилиния -> трубка
 // ---------- сцена ----------
 const mConc=new Mesh(),mBars=new Mesh(),mForm=new Mesh(),mEmb=new Mesh(),mJoint=new Mesh(),mWet=new Mesh(),mPress=new Mesh(),mPressF=new Mesh();
 const PHONE=innerWidth<900;
+function occl(){if(!PHONE)return 0;let h=0;const ms=$('#mstrip'),mt=$('#mtabs'),hud=$('#hud'),co=$('#callout');h+=ms.offsetHeight+mt.offsetHeight;if(hud.classList.contains('open'))h+=hud.offsetHeight;if(!co.hidden)h+=co.offsetHeight+6;return Math.min(0.8,h/innerHeight);}
+function placeOverlays(){if(!PHONE)return;const h=$('#mstrip').offsetHeight+$('#mtabs').offsetHeight+6;const hud=$('#hud');$('#callout').style.bottom=(h+(hud.classList.contains('open')?hud.offsetHeight+4:0))+'px';$('#hud').style.bottom=(h-6)+'px';$('#toast').style.bottom=(h+8)+'px';}
+function viewXform(){const o=occl();return {sy:o,sc:1-o*0.55};}
 const state={explode:0,cutSign:1,section:null,markSec:false,tol:120,marked:new Set(),stage:1,concMode:0/*0 сплошной 1 прозрачный 2 скрыть*/,prevMode:0/*0 видны 1 прозрачно 2 скрыть*/,showForm:true,cut:'none',cutT:0.5,sel:new Set(),hover:-1,anim:null,progress:1,pourLevel:null,formLift:null,whole:false,pressMode:0};
 const CONC=[0.74,0.74,0.72],CONC_A=[0.70,0.70,0.68,0.22],PREP=[0.60,0.60,0.56],WET=[0.48,0.5,0.55],FORM=[0.85,0.62,0.25],JOINT=[0.2,0.5,1];
 const SELC=[1.0,0.52,0.08],DIMC=[0.45,0.49,0.54];
@@ -293,7 +305,7 @@ function frameKey(k,opts){const kind=keyKind(k);if(kind==='pos'){const ids=idsOf
  bbs.forEach(b=>{const dz=kind==='lift'?ofsLift(k):ofsLift(liftOfZ((b[2]+b[5])/2));for(let i=0;i<3;i++){mn[i]=Math.min(mn[i],b[i]+(i===2?dz:0));mx[i]=Math.max(mx[i],b[i+3]+(i===2?dz:0));}});
  const c=[(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2];const ext=Math.max(mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2],1500);return flyTo(c,Object.assign({dist:Math.max(4500,ext*1.6)},opts||{}));}
 function jointInfo(z){const i=DATA.joints.indexOf(z);const below=['L1','L2','L3'][i],above=['L2','L3','L4'][i];return {below:liftById[below],above:liftById[above]};}
-function showCallout(k,intro){const el=$('#callout');const kind=keyKind(k);el.hidden=false;el.classList.toggle('intro',!!intro);
+function showCallout(k,intro){const el=$('#callout');const kind=keyKind(k);el.hidden=false;el.classList.toggle('intro',!!intro);if(PHONE){el.classList.toggle('mini',!intro);if(!el.querySelector('.more')){const m=document.createElement('div');m.className='more';m.textContent='▸ подробнее / где на чертеже';el.appendChild(m);el.addEventListener('click',ev=>{if(ev.target.closest('.x')||ev.target.closest('a'))return;el.classList.toggle('mini');invalidate();});}}placeOverlays();setTimeout(invalidate,30);
  if(kind==='joint'){const z=+k.slice(2);const j=jointInfo(z);$('#coSw').style.background='#1769e0';$('#coT').textContent=`Рабочий шов бетонирования, отм. ${(z/1000).toFixed(3)}`;
   $('#coG').innerHTML=`<b>Ниже</b><span>${j.below.name} (${j.below.V} м³)</span><b>Выше</b><span>${j.above.name} (${j.above.V} м³)</span><b>Обработка</b><span>очистка, насечка/промывка, удаление цементной плёнки перед следующей захваткой</span>`;
   $('#coRef').innerHTML=`<a>📐 Где на чертеже:</a> лист 26 (опалубка), разрезы 1-1…4-4 — «Шов бетонирования»`;return;}
@@ -315,10 +327,10 @@ function showCallout(k,intro){const el=$('#callout');const kind=keyKind(k);el.hi
  const sts=stages.filter(s=>s.bars.some(i=>bars[i].pos===p));
  $('#coG').innerHTML=`<b>Длина</b><span>${sp.L} мм${sp.shape?' · '+sp.shape:''}</span><b>Количество</b><span>${sp.n} шт по спец.${sp.nm!==sp.n?' (в модели '+sp.nm+')':''} · ${sp.m1} кг/шт · всего ${fmt(sp.m,1)} кг</span><b>Этапы</b><span>${sts.map(s=>`эт.${s.id} (${s.bars.filter(i=>bars[i].pos===p).length})`).join(', ')}</span>`;
  $('#coRef').innerHTML=`<a>📐 Где на чертеже:</a> ${sp.ref}`;}
-function hideCallout(){$('#callout').hidden=true;}
+function hideCallout(){$('#callout').hidden=true;invalidate();}
 $('#coX').onclick=()=>{state.sel.clear();hideCallout();rebuildAll();renderSpec();renderEl();};
 function draw(){resize();gl.viewport(0,0,cv.width,cv.height);if(state.sel.size)gl.clearColor(0.12,0.13,0.15,1);else gl.clearColor(1,1,1,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
- const e=eye();const V=lookAt(e,cam.tgt,[0,0,1]);const P=persp(0.9,cv.width/cv.height,100,80000);const MVP=mul(P,V);
+ const e=eye();const V=lookAt(e,cam.tgt,[0,0,1]);const P=persp(0.9,cv.width/cv.height,100,80000);const vx=viewXform();const T=[vx.sc,0,0,0,0,vx.sc,0,0,0,0,1,0,0,vx.sy,0,1];const MVP=mul(T,mul(P,V));
  gl.uniformMatrix4fv(U.mvp,false,new Float32Array(MVP));gl.uniformMatrix4fv(U.mv,false,new Float32Array(V));gl.uniform3f(U.ldir,0.4,0.3,0.85);
  let cut=[0,0,0,0],doc=0;if(state.cut!=='none'){const ax={x:0,y:1,z:2}[state.cut];const v=cutPos();cut=[0,0,0,state.cutSign*v];cut[ax]=state.cutSign;doc=1;}
  gl.uniform4fv(U.cut,new Float32Array(cut));gl.uniform1i(U.docut,doc);
@@ -343,7 +355,7 @@ cv.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;ptrs.set(
 function pan(dx,dy){const e=eye();const f=norm(sub(cam.tgt,e)),s=norm(cross(f,[0,0,1])),u=cross(s,f);const k=cam.dist*0.0015;cam.tgt=[cam.tgt[0]-s[0]*dx*k+u[0]*dy*k,cam.tgt[1]-s[1]*dx*k+u[1]*dy*k,cam.tgt[2]-s[2]*dx*k+u[2]*dy*k];}
 let downAt=null;cv.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY,performance.now()];});
 cv.addEventListener('pointerup',e=>{const tap=downAt&&Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])<7&&ptrs.size===1;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(ptrs.size===0)last=null;if(tap)onTap(e);downAt=null;});
-function rayAt(x,y){const e=eye();const f=norm(sub(cam.tgt,e)),sx=norm(cross(f,[0,0,1])),u=cross(sx,f);const asp=cv.width/cv.height;const t=Math.tan(0.45);const nx=(x/innerWidth*2-1)*t*asp,ny=(1-y/innerHeight*2)*t;return [e,norm([f[0]+sx[0]*nx+u[0]*ny,f[1]+sx[1]*nx+u[1]*ny,f[2]+sx[2]*nx+u[2]*ny])];}
+function rayAt(x,y){const e=eye();const f=norm(sub(cam.tgt,e)),sx=norm(cross(f,[0,0,1])),u=cross(sx,f);const asp=cv.width/cv.height;const t=Math.tan(0.45);const vx=viewXform();const nx=(x/innerWidth*2-1)/vx.sc*t*asp,ny=((1-y/innerHeight*2)-vx.sy)/vx.sc*t;return [e,norm([f[0]+sx[0]*nx+u[0]*ny,f[1]+sx[1]*nx+u[1]*ny,f[2]+sx[2]*nx+u[2]*ny])];}
 function raySeg(o,d,a,b){const ab=sub(b,a);const ao=sub(a,o);const dd=1,ab2=ab[0]*ab[0]+ab[1]*ab[1]+ab[2]*ab[2];const dab=d[0]*ab[0]+d[1]*ab[1]+d[2]*ab[2];const dao=d[0]*ao[0]+d[1]*ao[1]+d[2]*ao[2];const abao=ab[0]*ao[0]+ab[1]*ao[1]+ab[2]*ao[2];
  const den=dd*ab2-dab*dab;let s,t;if(den<1e-9){t=0;s=dao;}else{t=(dab*dao-dd*abao)/den;t=Math.max(0,Math.min(1,t));s=dao+dab*t;}if(s<0)return null;const p=[a[0]+ab[0]*t,a[1]+ab[1]*t,a[2]+ab[2]*t];const q=[o[0]+d[0]*s,o[1]+d[1]*s,o[2]+d[2]*s];return [s,Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2])];}
 function rayTri(o,d,t){const e1=sub(t[1],t[0]),e2=sub(t[2],t[0]);const p=cross(d,e2);const det=e1[0]*p[0]+e1[1]*p[1]+e1[2]*p[2];if(Math.abs(det)<1e-9)return null;const inv=1/det;const tv=sub(o,t[0]);const u=(tv[0]*p[0]+tv[1]*p[1]+tv[2]*p[2])*inv;if(u<0||u>1)return null;const q=cross(tv,e1);const v=(d[0]*q[0]+d[1]*q[1]+d[2]*q[2])*inv;if(v<0||u+v>1)return null;const s=(e2[0]*q[0]+e2[1]*q[1]+e2[2]*q[2])*inv;return s>0?s:null;}
@@ -515,7 +527,7 @@ async function playFrom(n){if(state.anim){stopAnim();return;}state.anim=true;$('
 $('#play').onclick=()=>{if(PHONE)msheet(null);playFrom(state.whole?1:state.stage);};
 // ---------- мобильная компоновка ----------
 let msheetCur=null;
-function msheet(m){msheetCur=m;document.querySelectorAll('#mtabs button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+function msheet(m){msheetCur=m;if(m)$('#callout').classList.add('mini');setTimeout(invalidate,30);setTimeout(invalidate,300);document.querySelectorAll('#mtabs button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
  if(!m){$('#hud').classList.remove('open');return;}
  ['stage','spec','el','conc','cut','more'].forEach(t=>{const p=$('#p-'+t);if(p)p.hidden=t!==m;});$('#hud').classList.add('open');$('#hud').scrollTop=0;}
 if(PHONE){
@@ -528,7 +540,7 @@ if(PHONE){
  $('#moreView').innerHTML='<button class="sm" id="mHome">⌂ Вид</button><button class="sm" id="mWhole">◼ Весь фундамент</button><button class="sm" id="mConc">▣ Бетон</button><button class="sm" id="mForm">▤ Опалубка</button><button class="sm" id="mPrev">◐ Пред. этапы</button>';
  $('#mHome').onclick=()=>$('#bHome').click();$('#mWhole').onclick=()=>{$('#bWhole').click();msheet(null);};$('#mConc').onclick=()=>$('#bConc').click();$('#mForm').onclick=()=>$('#bForm').click();$('#mPrev').onclick=()=>$('#bPrev').click();
  $('#p-more').appendChild($('#tconc'));
- document.querySelectorAll('#mtabs button').forEach(b=>b.onclick=()=>{msheet(msheetCur===b.dataset.m?null:b.dataset.m);});
+ document.querySelectorAll('#mtabs button').forEach(b=>b.onclick=()=>{msheet(msheetCur===b.dataset.m?null:b.dataset.m);});placeOverlays();window.addEventListener('resize',()=>{placeOverlays();invalidate();});
  $('#grab').onclick=()=>$('#hud').classList.toggle('full');
  $('#hud').addEventListener('pointerup',e=>{if(gy!==null){const d=e.clientY-gy;if(d>50)msheet(null);else if(d<-50)$('#hud').classList.add('full');gy=null;}},true);
  // стрелки этапов: при смене этапа обновлять полоску (renderHUD пишет в #stageTitle, он перенесён)
