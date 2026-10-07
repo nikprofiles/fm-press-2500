@@ -76,6 +76,33 @@ tr.hdr td{background:#f4f7fa;font-weight:700;color:var(--mut);font-size:13px;tex
 .chip{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;background:#eef2f7;color:#3a4756;margin-right:6px;margin-bottom:4px}
 .sw{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:8px;vertical-align:middle}
 #left{display:none}
+#mtabs,#mstrip{display:none}
+@media (max-width:899px){
+ html,body{font-size:15px}
+ #top{padding:max(8px,env(safe-area-inset-top)) 12px 6px}#top h1{font-size:16px}#top .sub{display:none}
+ #mtabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:12;background:var(--panel);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:4px;box-shadow:0 -6px 20px rgba(20,40,70,.12)}
+ #mtabs button{flex:1;padding:8px 2px;font-size:12px;border-radius:10px;line-height:1.15;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:52px}
+ #mtabs button i{font-style:normal;font-size:20px}
+ #mtabs button.on{background:#dcebff;border-color:var(--acc);color:#0b3f7f}
+ #mstrip{display:flex;position:fixed;left:0;right:0;bottom:calc(66px + env(safe-area-inset-bottom));z-index:11;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:6px 8px;gap:6px;align-items:center}
+ #mstrip #stageTitle{font-size:14px}
+ #mstrip #play{white-space:nowrap}
+ #hud{top:auto;bottom:calc(66px + env(safe-area-inset-bottom));max-height:56vh;transform:translateY(110%);transition:transform .25s,max-height .25s;padding:6px 12px 10px;border-radius:18px 18px 0 0;overflow:auto;box-shadow:0 -8px 30px rgba(20,40,70,.2)}
+ #hud.open{transform:none}#hud.full{max-height:calc(100vh - 140px)}
+ #hud.min{transform:translateY(110%)}
+ #hud>.row:first-of-type,#hud #steps,#hud #tabs{display:none}
+ #grab{margin:4px auto 8px}
+ .pane{max-height:none}
+ #legend{top:auto;bottom:calc(126px + env(safe-area-inset-bottom));right:8px;gap:6px}#legend button{width:42px;height:42px;font-size:18px;border-radius:12px}
+ #speed{display:none}
+ #callout{top:auto;left:8px;right:58px;bottom:calc(126px + env(safe-area-inset-bottom));max-height:46vh;overflow:auto;padding:10px 12px}
+ #callout .h{font-size:17px}#callout .g{font-size:13.5px;gap:2px 10px;margin-top:6px}#callout .ref{font-size:13.5px;padding:8px 10px;margin-top:8px}
+ #banner{padding-top:max(60px,calc(env(safe-area-inset-top) + 50px))}
+ #toast{top:auto;bottom:calc(136px + env(safe-area-inset-bottom))}
+ #tree .n{padding:8px 6px;font-size:15px}#tree .n.leaf{font-size:14px}
+ td,th{padding:8px 6px}
+ #p-more .row{margin:8px 0}
+}
 #tree{font-size:14px;line-height:1.25}
 #tree .n{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:7px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #tree .n:hover{background:#eef2f7}
@@ -110,6 +137,8 @@ tr.hdr td{background:#f4f7fa;font-weight:700;color:var(--mut);font-size:13px;tex
   <button id="bCut" title="Разрез">✂</button>
   <button id="bPrev" title="Предыдущие этапы: видны / прозрачно / скрыть">◐</button>
 </div>
+<div id="mstrip"><button id="mprev" class="sm">◀</button><div id="stageTitle"><span id="stageNo"></span> <span id="stageT"></span></div><button id="mnext" class="sm">▶</button><button id="mplay" class="sm acc">▶</button></div>
+<div id="mtabs"><button data-m="stage"><i>⟲</i>Этапы</button><button data-m="el"><i>☰</i>Элементы</button><button data-m="cut"><i>✂</i>Разрез</button><button data-m="spec"><i>▤</i>Спец.</button><button data-m="more"><i>⋯</i>Ещё</button></div>
 <div id="banner" hidden><div><h2 id="bnH"></h2><p id="bnP"></p></div></div>
 <div id="toast"></div>
 <div id="hud">
@@ -128,6 +157,7 @@ tr.hdr td{background:#f4f7fa;font-weight:700;color:var(--mut);font-size:13px;tex
   <div class="pane" id="p-spec" hidden><table id="tspec"></table></div>
   <div class="pane" id="p-el" hidden><div id="explodeBox"><label>Разнести</label><input type="range" id="explode" min="0" max="1000" value="0"></div><div id="tree"></div></div>
   <div class="pane" id="p-conc" hidden><table id="tconc"></table></div>
+  <div class="pane" id="p-more" hidden><div class="row wrap" id="moreSpeed"></div><div class="row wrap" id="moreView"></div><table id="tconc2"></table></div>
   <div class="pane" id="p-cut" hidden>
     <div class="sub" style="color:var(--mut);font-size:13px;margin:6px 0 4px">Разрезы по чертежу (лист 26, план Фм1.10):</div>
     <div class="row wrap" id="secBtns" style="margin:0 0 8px"></div>
@@ -187,6 +217,7 @@ function tube(m,pts,r,col){// полилиния -> трубка
   if(i===0||i===pts.length-2){const cap=(c,dir)=>{for(let k=0;k<NSEG;k++){const n0=ring(k)[0],n1=ring(k+1)[0];const q0=[c[0]+n0[0]*r,c[1]+n0[1]*r,c[2]+n0[2]*r],q1=[c[0]+n1[0]*r,c[1]+n1[1]*r,c[2]+n1[2]*r];if(dir<0)m.tri(c,q1,q0,[-d[0],-d[1],-d[2]],col);else m.tri(c,q0,q1,d,col);}};if(i===0)cap(a,-1);if(i===pts.length-2)cap(b,1);}}}
 // ---------- сцена ----------
 const mConc=new Mesh(),mBars=new Mesh(),mForm=new Mesh(),mEmb=new Mesh(),mJoint=new Mesh(),mWet=new Mesh(),mPress=new Mesh(),mPressF=new Mesh();
+const PHONE=innerWidth<900;
 const state={explode:0,cutSign:1,section:null,markSec:false,tol:120,marked:new Set(),stage:1,concMode:0/*0 сплошной 1 прозрачный 2 скрыть*/,prevMode:0/*0 видны 1 прозрачно 2 скрыть*/,showForm:true,cut:'none',cutT:0.5,sel:new Set(),hover:-1,anim:null,progress:1,pourLevel:null,formLift:null,whole:false,pressMode:0};
 const CONC=[0.74,0.74,0.72],CONC_A=[0.70,0.70,0.68,0.22],PREP=[0.60,0.60,0.56],WET=[0.48,0.5,0.55],FORM=[0.85,0.62,0.25],JOINT=[0.2,0.5,1];
 const SELC=[1.0,0.52,0.08],DIMC=[0.45,0.49,0.54];
@@ -329,7 +360,7 @@ function onTap(ev){const [o,d]=rayAt(ev.clientX,ev.clientY);let best=null;const 
  if(best&&(!hit||best.s<hit.s+thr*2||(concT&&!hit.emb)))key=best.key;else if(hit)key=hit.key;
  stopAnim();if(!key){state.sel.clear();hideCallout();rebuildAll();renderSpec();renderEl();return;}
  if(!(ev.ctrlKey||ev.shiftKey))state.sel.clear();if(state.sel.has(key))state.sel.delete(key);else state.sel.add(key);
- rebuildAll();renderSpec();renderEl();if(state.sel.size){showCallout(key,false);if(innerWidth<900)$('#hud').classList.add('min');}else hideCallout();}
+ rebuildAll();renderSpec();renderEl();if(state.sel.size){showCallout(key,false);}else hideCallout();}
 cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pinch=null;last=null;});
 cv.addEventListener('wheel',e=>{e.preventDefault();cam.dist=Math.max(2000,Math.min(40000,cam.dist*(1+Math.sign(e.deltaY)*0.1)));invalidate();},{passive:false});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
@@ -376,7 +407,7 @@ document.addEventListener('click',e=>{const tr=e.target.closest('tr.pos');if(!tr
  if(!(e.ctrlKey||e.shiftKey))state.sel.clear();
  if(state.sel.has(p))state.sel.delete(p);else state.sel.add(p);
  rebuildAll();renderSpec();renderEl();
- if(state.sel.size){const last=[...state.sel].pop();showCallout(last,false);frameKey(last,{pitch:0.45});if(innerWidth<900)$('#hud').classList.add('min');}
+ if(state.sel.size){const last=[...state.sel].pop();showCallout(last,false);if(!PHONE)frameKey(last,{pitch:0.45});else msheet(null);}
  else{hideCallout();}});
 const treeOpen=new Set();let treeQ='';
 function trow(key,label,extra,cls,hasCh,count){const sel=state.sel.has(key);return `<div class="n ${cls||''}${sel?' sel':''}" data-k="${key}">${hasCh?`<span class="tg" data-tg="${key}">${treeOpen.has(key)?'▾':'▸'}</span>`:'<span class="tg"></span>'}<span>${label}</span>${extra?`<span class="cnt">${extra}</span>`:''}</div>`;}
@@ -395,18 +426,18 @@ function renderEl(){const q=treeQ.toLowerCase();const m=t=>!q||t.toLowerCase().i
  $('#tree').innerHTML=h;const sel=$('#tree .n.sel');if(sel)sel.scrollIntoView({block:'nearest'});}
 $('#tree').addEventListener('click',e=>{const tg=e.target.closest('.tg[data-tg]');if(tg){const k=tg.dataset.tg;if(treeOpen.has(k))treeOpen.delete(k);else treeOpen.add(k);renderEl();e.stopPropagation();return;}
  const n=e.target.closest('.n[data-k]');if(!n)return;const k=n.dataset.k;stopAnim();if(!(e.ctrlKey||e.shiftKey))state.sel.clear();if(state.sel.has(k))state.sel.delete(k);else state.sel.add(k);
- rebuildAll();renderSpec();renderEl();if(state.sel.size){showCallout(k,false);frameKey(k,{pitch:0.45});}else hideCallout();});
+ rebuildAll();renderSpec();renderEl();if(state.sel.size){showCallout(k,false);if(!PHONE)frameKey(k,{pitch:0.45});else msheet(null);}else hideCallout();});
 $('#search').oninput=e=>{treeQ=e.target.value;renderEl();};
 // дерево: на десктопе — в левой колонке, на телефоне — во вкладке «Элементы»
 if(innerWidth>=900){$('#treeHost').appendChild($('#tree'));}
 $('#explode').oninput=e=>{state.explode=e.target.value/1000;rebuildAll();};
 document.addEventListener('mouseover',e=>{const tr=e.target.closest('tr.pos');const p=tr?tr.dataset.pos:-1;if(p!==state.hover){state.hover=p;rebuildBars();invalidate();}});
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...$('#tabs').children].forEach(x=>x.classList.toggle('on',x===b));['stage','spec','el','conc','cut'].forEach(t=>$('#p-'+t).hidden=t!==b.dataset.t);$('#hud').classList.remove('min');});
-$('#grab').onclick=()=>$('#hud').classList.toggle('min');
-let gy=null;$('#hud').addEventListener('pointerdown',e=>{if(e.target.closest('#grab')||e.target.closest('.row'))gy=e.clientY;});$('#hud').addEventListener('pointerup',e=>{if(gy!==null){const d=e.clientY-gy;if(d>40)$('#hud').classList.add('min');else if(d<-40)$('#hud').classList.remove('min');gy=null;}});
+if(!PHONE)$('#grab').onclick=()=>$('#hud').classList.toggle('min');
+let gy=null;$('#hud').addEventListener('pointerdown',e=>{if(e.target.closest('#grab'))gy=e.clientY;});if(innerWidth>=900){$('#hud').addEventListener('pointerup',e=>{if(gy!==null){const d=e.clientY-gy;if(d>40)$('#hud').classList.add('min');else if(d<-40)$('#hud').classList.remove('min');gy=null;}});}
 function showWhole(){stopAnim();state.whole=true;if(state.concMode===0)state.concMode=1;state.sel.clear();hideCallout();state.formLift=null;state.pourLevel=null;rebuildAll();renderEl();toast('Весь фундамент в сборе: коснитесь элемента или откройте «Элементы» и «Разнести»');}
 $('#bWhole').onclick=showWhole;
-$('#bHome').onclick=()=>{cam.yaw=-2.2;cam.pitch=0.55;cam.dist=innerWidth<innerHeight?22000:14000;cam.tgt=[C[0],C[1],C[2]-500];invalidate();};
+$('#bHome').onclick=()=>{cam.yaw=-2.2;cam.pitch=0.55;cam.dist=innerWidth<innerHeight?24000:14000;cam.tgt=[C[0],C[1],C[2]-500];invalidate();};
 $('#bConc').onclick=()=>{state.concMode=(state.concMode+1)%3;toast(['Бетон: сплошной','Бетон: прозрачный','Бетон: скрыт'][state.concMode]);rebuildConc();invalidate();};
 $('#bForm').onclick=()=>{state.showForm=!state.showForm;$('#bForm').classList.toggle('on',state.showForm);toast(state.showForm?'Опалубка показана':'Опалубка скрыта');rebuildForm();invalidate();};
 $('#bPrev').onclick=()=>{state.prevMode=(state.prevMode+1)%3;toast(['Предыдущие этапы: видны','Предыдущие этапы: прозрачно','Предыдущие этапы: скрыты'][state.prevMode]);rebuildBars();invalidate();};
@@ -481,13 +512,33 @@ async function playFrom(n){if(state.anim){stopAnim();return;}state.anim=true;$('
  }
  if(state.anim){state.whole=true;rebuildAll();await banner('Фундамент Фм1.10 собран',`${fmt(DATA.totals.rebar_kg)} кг арматуры · ${DATA.totals.concrete_B25} м³ бетона B25`,2500);}
  stopAnim();}
-$('#play').onclick=()=>{if(innerWidth<900)$('#hud').classList.add('min');playFrom(state.whole?1:state.stage);};
+$('#play').onclick=()=>{if(PHONE)msheet(null);playFrom(state.whole?1:state.stage);};
+// ---------- мобильная компоновка ----------
+let msheetCur=null;
+function msheet(m){msheetCur=m;document.querySelectorAll('#mtabs button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+ if(!m){$('#hud').classList.remove('open');return;}
+ ['stage','spec','el','conc','cut','more'].forEach(t=>{const p=$('#p-'+t);if(p)p.hidden=t!==m;});$('#hud').classList.add('open');$('#hud').scrollTop=0;}
+if(PHONE){
+ // лента этапов и кнопки управления — в нижнюю полоску
+ const strip=$('#mstrip');const hudTitle=$('#hud #stageTitle');strip.replaceChild(hudTitle,$('#mstrip #stageTitle'));
+ $('#mprev').onclick=()=>$('#prev').click();$('#mnext').onclick=()=>$('#next').click();$('#mplay').onclick=()=>{msheet(null);playFrom(state.whole?1:state.stage);};
+ $('#play').parentElement.style.display='none';strip.appendChild($('#steps'));$('#steps').style.cssText='flex:1 1 100%;order:5;margin-top:4px';strip.style.flexWrap='wrap';
+ // «Ещё»: скорость, вид, бетон/опалубка
+ $('#moreSpeed').appendChild($('#speed'));$('#speed').style.cssText='display:flex;position:static;flex-direction:row;gap:6px';
+ $('#moreView').innerHTML='<button class="sm" id="mHome">⌂ Вид</button><button class="sm" id="mWhole">◼ Весь фундамент</button><button class="sm" id="mConc">▣ Бетон</button><button class="sm" id="mForm">▤ Опалубка</button><button class="sm" id="mPrev">◐ Пред. этапы</button>';
+ $('#mHome').onclick=()=>$('#bHome').click();$('#mWhole').onclick=()=>{$('#bWhole').click();msheet(null);};$('#mConc').onclick=()=>$('#bConc').click();$('#mForm').onclick=()=>$('#bForm').click();$('#mPrev').onclick=()=>$('#bPrev').click();
+ $('#p-more').appendChild($('#tconc'));
+ document.querySelectorAll('#mtabs button').forEach(b=>b.onclick=()=>{msheet(msheetCur===b.dataset.m?null:b.dataset.m);});
+ $('#grab').onclick=()=>$('#hud').classList.toggle('full');
+ $('#hud').addEventListener('pointerup',e=>{if(gy!==null){const d=e.clientY-gy;if(d>50)msheet(null);else if(d<-50)$('#hud').classList.add('full');gy=null;}},true);
+ // стрелки этапов: при смене этапа обновлять полоску (renderHUD пишет в #stageTitle, он перенесён)
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')stopAnim();if(e.key==='ArrowRight'){stopAnim();setStage(state.stage+1);}if(e.key==='ArrowLeft'){stopAnim();setStage(state.stage-1);}});
 // ---------- старт ----------
 $('#ttl').textContent=DATA.title;$('#code').textContent=DATA.code+(DATA.source?' · '+DATA.source:'');
 rebuildEmb();renderSpec();renderConc();renderEl();updateCutLabel();if(innerWidth>=900){$('#explodeBox').style.margin='6px 0';$('#p-el').insertAdjacentHTML('beforeend','<div class="sub" style="color:var(--mut);font-size:13px">Список элементов — в левой колонке. Shift+клик — добавить к выбору, клик по пустому месту — снять выбор.</div>');}$('#bForm').classList.add('on');
 // стартовый этап из hash: #s5 или #all
-if(innerWidth<innerHeight)cam.dist=22000;const h=location.hash;if(h==='#all'){showWhole();}else{const m=/#s(\d+)/.exec(h);setStage(m?+m[1]:1);}
+if(innerWidth<innerHeight){cam.dist=24000;cam.tgt=[C[0],C[1],C[2]-1200];}const h=location.hash;if(h==='#all'){showWhole();}else{const m=/#s(\d+)/.exec(h);setStage(m?+m[1]:1);}
 loop();
 </script>
 </body>
